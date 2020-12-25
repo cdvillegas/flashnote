@@ -1,84 +1,61 @@
 from flask import render_template, request, redirect
 from app import app, db
-from app.models import Entry
+from app.models import Deck
+import json
 
 @app.route('/')
-@app.route('/index')
 def index():
-    # entries = [
-    #     {
-    #         'id' : 1,
-    #         'title': 'test title 1',
-    #         'description' : 'test desc 1',
-    #         'status' : True
-    #     },
-    #     {
-    #         'id': 2,
-    #         'title': 'test title 2',
-    #         'description': 'test desc 2',
-    #         'status': False
-    #     }
-    # ]
-    entries = Entry.query.all()
-    return render_template('index.html', entries=entries)
+    # Redirect to decks for now
+    return redirect('/decks')
 
-@app.route('/add', methods=['POST'])
-def add():
+@app.route('/decks', methods=['GET', 'POST'])
+def decks():
     if request.method == 'POST':
-        form = request.form
-        title = form.get('title')
-        description = form.get('description')
-        if not title or description:
-            entry = Entry(title = title, description = description)
-            db.session.add(entry)
-            db.session.commit()
-            return redirect('/')
+        # Extract data from the request
+        title = request.form.get('title')
+        description = request.form.get('description')
+        cards = request.form.get('cards')
 
-    return "of the jedi"
-
-@app.route('/update/<int:id>')
-def updateRoute(id):
-    if not id or id != 0:
-        entry = Entry.query.get(id)
-        if entry:
-            return render_template('update.html', entry=entry)
-
-    return "of the jedi"
-
-@app.route('/update', methods=['POST'])
-def update():
-    if not id or id != 0:
-        entry = Entry.query.get(id)
-        if entry:
-            db.session.delete(entry)
-            db.session.commit()
+        # Add new record to database
+        deck = Deck(title=title, description=description, cards=cards)
+        db.session.add(deck)
+        db.session.commit()
         return redirect('/')
 
-    return "of the jedi"
+    # Query titles and descriptions of all decks
+    decks = Deck.query.with_entities(Deck.title, Deck.description)
 
+    # Render index.html
+    return render_template('decks.html', decks=decks)
 
+@app.route('/decks/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+def deck(id):
+    # Get the deck
+    deck = Deck.query.filter_by(id=id).first()
 
-@app.route('/delete/<int:id>')
-def delete(id):
-    if not id or id != 0:
-        entry = Entry.query.get(id)
-        if entry:
-            db.session.delete(entry)
-            db.session.commit()
-        return redirect('/')
+    if request.method == 'PUT':
+        # Update record in the database
+        deck.update({
+            "title": request.form.get('title'),
+            "description": request.form.get('description'),
+            "cards": request.form.get('id'),
+        })
+        db.session.commit()
+    elif request.method == 'DELETE': 
+        # Delete from database and redirect
+        db.session.delete(deck)
+        db.session.commit()
+        return redirect('/decks')
 
-    return "of the jedi"
+    # Unmarshal cards json string into dictionary
+    [deck.update({'cards': json.loads(deck['cards'])}) for deck in decks]
 
-@app.route('/turn/<int:id>')
-def turn(id):
-    if not id or id != 0:
-        entry = Entry.query.get(id)
-        if entry:
-            entry.status = not entry.status
-            db.session.commit()
-        return redirect('/')
+    return render_template('deck.html', deck=deck)
 
-    return "of the jedi"
+@app.route('/create', methods=['GET'])
+def create():
+    # Render index.html
+    return render_template('create.html')
 
 # @app.errorhandler(Exception)
 # def error_page(e):
