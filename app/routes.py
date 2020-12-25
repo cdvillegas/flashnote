@@ -2,11 +2,7 @@ from flask import render_template, request, redirect
 from app import app, db
 from app.models import Deck
 import json
-
-@app.route('/')
-def index():
-    # Redirect to decks for now
-    return redirect('/decks')
+import os
 
 @app.route('/decks', methods=['GET', 'POST'])
 def decks():
@@ -20,12 +16,12 @@ def decks():
         deck = Deck(title=title, description=description, cards=cards)
         db.session.add(deck)
         db.session.commit()
-        return redirect('/')
+
+        return redirect(os.path.join('decks', str(deck.id)))
 
     # Query titles and descriptions of all decks
     decks = Deck.query.with_entities(Deck.title, Deck.description)
 
-    # Render index.html
     return render_template('decks.html', decks=decks)
 
 @app.route('/decks/<int:id>', methods=['GET', 'PUT', 'DELETE'])
@@ -50,13 +46,4 @@ def deck(id):
     # Unmarshal cards json string into dictionary
     [deck.update({'cards': json.loads(deck['cards'])}) for deck in decks]
 
-    return render_template('deck.html', deck=deck)
-
-@app.route('/create', methods=['GET'])
-def create():
-    # Render index.html
-    return render_template('create.html')
-
-# @app.errorhandler(Exception)
-# def error_page(e):
-#     return "of the jedi"
+    return str(deck)
