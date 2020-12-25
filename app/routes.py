@@ -36,9 +36,9 @@ def deck(id):
     if request.method == 'PUT':
         # Update record in the database
         deck.update({
-            "title": request.form.get('title'),
-            "description": request.form.get('description'),
-            "cards": request.form.get('id'),
+            'title': request.form.get('title'),
+            'description': request.form.get('description'),
+            'cards': request.form.get('id'),
         })
         db.session.commit()
     elif request.method == 'DELETE': 
